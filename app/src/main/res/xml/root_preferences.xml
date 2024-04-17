@@ -1,0 +1,21 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory android:title="@string/grp_general_settings">
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/shared_pref_is_globally_disabled"
+            android:title="@string/sw_globally_disabled" />
+    </PreferenceCategory>
+    <PreferenceCategory app:title="@string/grp_slider_settings">
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/sw_logarithmic_id"
+            android:title="@string/sw_logarithmic_label"
+            app:summary="@string/sw_logarithmic_summary" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

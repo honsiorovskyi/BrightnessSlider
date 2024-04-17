@@ -6,6 +6,7 @@ import android.app.KeyguardManager
 import android.content.res.Resources
 import android.graphics.PixelFormat
 import android.provider.Settings
+import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -14,9 +15,9 @@ import android.view.accessibility.AccessibilityEvent
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
-import kotlin.math.abs
+import kotlin.math.pow
 
-class StatusBarAccessibilityService : AccessibilityService() {
+class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
     companion object {
         // Not holding an indefinite static reference, so this should be ok.
         // However, singleton is unsatisfying here, but is there another solution?
@@ -25,8 +26,14 @@ class StatusBarAccessibilityService : AccessibilityService() {
             private set
     }
 
+
     private lateinit var statusBarView: View
     private lateinit var preferences: Preferences
+    private lateinit var torch: Torch
+
+    private var useLogarithmicBrightness = false
+
+    private val padding = 100 // Left and right "deadzone"
 
     override fun onCreate() {
         super.onCreate()
@@ -34,6 +41,9 @@ class StatusBarAccessibilityService : AccessibilityService() {
         instance = this
         statusBarView = View(this)
         preferences = Preferences(this)
+        torch = Torch(this)
+
+        updateSettings()
 
         EventBus.getDefault().register(this)
         EventBus.getDefault().post(AccessibilityStatusChangedEvent(AccessibilityStatusType.BOUND))
@@ -48,44 +58,9 @@ class StatusBarAccessibilityService : AccessibilityService() {
     }
 
     override fun onServiceConnected() {
-        val minXDistance = 100f // Minimum sliding distance to start changing the brightness
-        var firstXValue = 0f // Position at which the user started touching the status bar
-        var isSliding = false // Whether the user is currently sliding on the status bar
-        val padding = 100 // Left and right "deadzone"
-        var startTouchTime = 0L // Epoch at which the user started touching the status bar
-        val maxTouchDelay = 300 // Maximum delay between two touches to trigger a screen lock
-        statusBarView.setOnTouchListener { _, event ->
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    isSliding = false
-                    firstXValue = event.x
-
-                    val currentTime = System.currentTimeMillis()
-                    if (currentTime - startTouchTime < maxTouchDelay) {
-                        performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
-                    }
-                    startTouchTime = currentTime
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    if (!isSliding && minXDistance <= abs(event.x - firstXValue)) {
-                        isSliding = true
-                    }
-                    if (isSliding) {
-                        val totalWidth = getScreenWidth()
-                        val brightnessValue = (
-                            255 * (event.x - padding) / (totalWidth - 2 * padding)
-                            ).toInt().coerceIn(0, 255)
-
-                        Settings.System.putInt(
-                            contentResolver,
-                            Settings.System.SCREEN_BRIGHTNESS,
-                            brightnessValue,
-                        )
-                    }
-                }
-            }
-            false
-        }
+        val gestureListener: GestureListener = this
+        val gestureDetector = GestureDetector(gestureListener)
+        statusBarView.setOnTouchListener(gestureDetector)
 
         @Suppress("DEPRECATION")
         val params = WindowManager.LayoutParams(
@@ -104,6 +79,47 @@ class StatusBarAccessibilityService : AccessibilityService() {
         }
         val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         windowManager.addView(statusBarView, params)
+    }
+
+    override fun onDoubleTapConfirmed(event: MotionEvent) {
+        performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
+    }
+
+    override fun onSingleLongTap(event: MotionEvent) {
+        if (event.x < getScreenWidth() / 3f) {
+            toggleFlashLight()
+        } else if (event.x > getScreenWidth() / 3f * 2f) {
+            performGlobalAction(GLOBAL_ACTION_TAKE_SCREENSHOT);
+        }
+        Log.v("INFO", "long tap")
+    }
+
+    private fun toggleFlashLight() {
+        torch.torch(40)
+    }
+
+    override fun onSingleHorizontalSlide(event: MotionEvent) {
+        val totalWidth = getScreenWidth()
+        val pos = ((event.x - padding) / (totalWidth - 2 * padding)).coerceIn(0f, 1f)
+
+        val brightnessValue = when(useLogarithmicBrightness) {
+            true ->  { 255.0.pow(pos.toDouble()) - 1 }
+            false -> { 255*pos }
+        }
+
+        Settings.System.putInt(
+            contentResolver,
+            Settings.System.SCREEN_BRIGHTNESS,
+            brightnessValue.toInt().coerceIn(0, 255),
+        )
+    }
+
+    override fun onSingleHorizontalFlick(event: MotionEvent, velocity: Float) {
+        Log.v("INFO", "Flick!")
+    }
+
+    override fun onDoubleHorizontalFlick(event: MotionEvent, velocity: Float) {
+        Log.v("INFO", "Double flick!")
     }
 
     private fun getStatusBarHeight(): Int {
@@ -138,13 +154,21 @@ class StatusBarAccessibilityService : AccessibilityService() {
 
     private fun updateViewVisibility() {
         statusBarView.visibility = when {
-            preferences.isGloballyDisabled || isDeviceLocked() -> View.INVISIBLE
+            !preferences.isGloballyEnabled || isDeviceLocked() -> View.INVISIBLE
             else -> View.VISIBLE
         }
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onGloballyDisabledChange(event: GloballyDisabledChangedEvent) {
+    private fun updateSettings() {
+        // change brightness scale
+        useLogarithmicBrightness = preferences.useLogarithmicBrightness
+
+        // update status bar visibility based on the global setting and device state
         updateViewVisibility()
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onSettingsUpdated(event: SettingsUpdatedEvent) {
+        updateSettings()
     }
 }

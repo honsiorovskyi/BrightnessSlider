@@ -15,6 +15,13 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
+        if (savedInstanceState == null) {
+            supportFragmentManager
+                .beginTransaction()
+                .replace(R.id.settings, SettingsFragment())
+                .commit()
+        }
+
         val canWritePermission = Settings.System.canWrite(this)
         if (!canWritePermission) {
             val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)

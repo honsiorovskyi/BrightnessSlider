@@ -2,4 +2,11 @@
     <string name="app_name">BrightnessSlider</string>
     <string name="accessibility_service_description">BrightnessSlider accessibility service</string>
     <string name="shared_pref_is_globally_disabled">shared_pref_is_globally_disabled</string>
+
+    <string name="sw_logarithmic_label">Use logarithmic brightness</string>
+    <string name="grp_slider_settings">Slider settings</string>
+    <string name="sw_logarithmic_summary">Toggles logarithmic scale for brightness. Needed for most of the AOSP-based ROMs (e.g. LineageOS, GrapheneOS etc)</string>
+    <string name="sw_logarithmic_id">sw_logarithmic_id</string>
+    <string name="grp_general_settings">General settings</string>
+    <string name="sw_globally_disabled">Service enabled</string>
 </resources>
