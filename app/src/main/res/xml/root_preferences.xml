@@ -15,6 +15,13 @@
             android:key="@string/sw_logarithmic_id"
             android:title="@string/sw_logarithmic_label"
             app:summary="@string/sw_logarithmic_summary" />
+        <ListPreference
+            android:defaultValue="3.0"
+            android:entries="@array/arr_flick_sensitivity_threshold_names"
+            android:entryValues="@array/arr_flick_sensitivity_threshold_values"
+            android:key="@string/lst_flick_sensitivity_id"
+            android:title="@string/lst_flick_sensitivity_label"
+            app:summary="@string/lst_flick_sensitivity_summary" />
 
     </PreferenceCategory>
 

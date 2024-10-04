@@ -52,6 +52,8 @@ class GestureDetector(private val gestureListener: GestureListener): View.OnTouc
     private val longTapThreshold = 400
     private val xMoveThreshold = 80
 
+    var flickVelocityThreshold = 1.25f
+
     private var state: MotionState = MotionState.UNKNOWN
     private var downEvent: MotionEvent = noMotionEvent()
 
@@ -112,7 +114,7 @@ class GestureDetector(private val gestureListener: GestureListener): View.OnTouc
 
                                 when {
                                     // it's a flick (fast)
-                                    abs(speed) > 1 -> {
+                                    abs(speed) > flickVelocityThreshold -> {
                                         when (prevState) {
                                             MotionState.SINGLE_TAP -> {
                                                 state = MotionState.SINGLE_HORIZONTAL_FLICK
@@ -128,6 +130,7 @@ class GestureDetector(private val gestureListener: GestureListener): View.OnTouc
 
                                     // it's a slide (slow)
                                     else -> {
+                                        Log.v("INFO", "${abs(speed)} $flickVelocityThreshold")
                                         when (prevState) {
                                             MotionState.SINGLE_TAP -> {
                                                 state = MotionState.SINGLE_HORIZONTAL_SLIDE

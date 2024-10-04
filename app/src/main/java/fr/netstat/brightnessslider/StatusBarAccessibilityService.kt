@@ -3,19 +3,22 @@ package fr.netstat.brightnessslider
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
 import android.app.KeyguardManager
-import android.content.res.Resources
 import android.graphics.PixelFormat
 import android.provider.Settings
+import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import android.widget.Toast
+import fr.netstat.brightnessslider.preferences.Preferences
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import kotlin.math.pow
+
 
 class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
     companion object {
@@ -26,6 +29,11 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
             private set
     }
 
+    private val gestureListener: GestureListener = this
+    private val gestureDetector = GestureDetector(gestureListener)
+
+    private val appLauncher = AppLauncher(this)
+    private lateinit var displayMetrics: DisplayMetrics
 
     private lateinit var statusBarView: View
     private lateinit var preferences: Preferences
@@ -43,6 +51,8 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         preferences = Preferences(this)
         torch = Torch(this)
 
+        displayMetrics = getDisplayMetrics(this)
+
         updateSettings()
 
         EventBus.getDefault().register(this)
@@ -58,8 +68,6 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
     }
 
     override fun onServiceConnected() {
-        val gestureListener: GestureListener = this
-        val gestureDetector = GestureDetector(gestureListener)
         statusBarView.setOnTouchListener(gestureDetector)
 
         @Suppress("DEPRECATION")
@@ -77,19 +85,34 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         ).apply {
             gravity = Gravity.TOP
         }
-        val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        windowManager.addView(statusBarView, params)
+        windowManager().addView(statusBarView, params)
     }
 
+    private fun windowManager(): WindowManager {
+        val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        return windowManager
+    }
+
+    @SuppressLint("InlinedApi")
     override fun onDoubleTapConfirmed(event: MotionEvent) {
         performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
     }
 
+    @SuppressLint("InlinedApi")
     override fun onSingleLongTap(event: MotionEvent) {
-        if (event.x < getScreenWidth() / 3f) {
-            toggleFlashLight()
-        } else if (event.x > getScreenWidth() / 3f * 2f) {
-            performGlobalAction(GLOBAL_ACTION_TAKE_SCREENSHOT);
+        when {
+            event.x < displayMetrics.widthPixels / 3f -> toggleFlashLight()
+            event.x < displayMetrics.widthPixels * 2f / 3f -> appLauncher.launch(App.OPEN_CAMERA)
+            else -> performGlobalAction(GLOBAL_ACTION_TAKE_SCREENSHOT)
+        }
+        Log.v("INFO", "long tap")
+    }
+
+    override fun onDoubleLongTap(event: MotionEvent) {
+        when {
+            event.x < displayMetrics.widthPixels / 3f -> appLauncher.launch(App.SIMPLY_TRANSLATE)
+            event.x < displayMetrics.widthPixels * 2f / 3f -> appLauncher.launch(App.GRAPHENEOS_CAMERA, true)
+            else -> appLauncher.launch(App.CALCULATOR)
         }
         Log.v("INFO", "long tap")
     }
@@ -99,7 +122,7 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
     }
 
     override fun onSingleHorizontalSlide(event: MotionEvent) {
-        val totalWidth = getScreenWidth()
+        val totalWidth = displayMetrics.widthPixels
         val pos = ((event.x - padding) / (totalWidth - 2 * padding)).coerceIn(0f, 1f)
 
         val brightnessValue = when(useLogarithmicBrightness) {
@@ -115,6 +138,7 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
     }
 
     override fun onSingleHorizontalFlick(event: MotionEvent, velocity: Float) {
+        appLauncher.launch(App.OPEN_CAMERA, true)
         Log.v("INFO", "Flick!")
     }
 
@@ -126,8 +150,6 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
         return if (resourceId != 0) resources.getDimensionPixelSize(resourceId) else 120
     }
-
-    private fun getScreenWidth() = Resources.getSystem().displayMetrics.widthPixels
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         when (event.eventType) {
@@ -147,14 +169,11 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
 
     override fun onInterrupt() {}
 
-    private fun isDeviceLocked(): Boolean {
-        val keyguardManager = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
-        return keyguardManager.isDeviceLocked
-    }
+
 
     private fun updateViewVisibility() {
         statusBarView.visibility = when {
-            !preferences.isGloballyEnabled || isDeviceLocked() -> View.INVISIBLE
+            !preferences.isGloballyEnabled || isLandscape(this) /*|| isDeviceLocked()*/ -> View.INVISIBLE
             else -> View.VISIBLE
         }
     }
@@ -162,6 +181,10 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
     private fun updateSettings() {
         // change brightness scale
         useLogarithmicBrightness = preferences.useLogarithmicBrightness
+
+        // gesture detector settings
+        gestureDetector.flickVelocityThreshold = preferences.flickSensitivityThreshold
+        Toast.makeText(this, "%f".format(gestureDetector.flickVelocityThreshold), Toast.LENGTH_SHORT).show()
 
         // update status bar visibility based on the global setting and device state
         updateViewVisibility()
@@ -172,3 +195,4 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         updateSettings()
     }
 }
+

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="arr_flick_sensitivity_threshold_values">
+        <item>0.7</item>
+        <item>0.85</item>
+        <item>1.0</item>
+        <item>1.5</item>
+        <item>2.0</item>
+    </string-array>
+    <string-array name="arr_flick_sensitivity_threshold_names">
+        <item>Very High (factor 0.7)</item>
+        <item>High (factor 0.85)</item>
+        <item>Medium (factor 1)</item>
+        <item>Low (factor 1.5)</item>
+        <item>Very Low (factor 2)</item>
+    </string-array>
+</resources>

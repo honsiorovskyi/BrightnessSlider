@@ -1,8 +1,10 @@
-package fr.netstat.brightnessslider
+package fr.netstat.brightnessslider.preferences
 
 import android.os.Bundle
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
+import fr.netstat.brightnessslider.R
+import fr.netstat.brightnessslider.SettingsUpdatedEvent
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode

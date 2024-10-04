@@ -7,9 +7,10 @@
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/settings"
-        android:name="fr.netstat.brightnessslider.SettingsFragment"
+        android:name="fr.netstat.brightnessslider.preferences.SettingsFragment"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         tools:layout_editor_absoluteX="221dp"
-        tools:layout_editor_absoluteY="249dp" />
+        tools:layout_editor_absoluteY="249dp"
+        tools:ignore="MissingConstraints" />
 </androidx.constraintlayout.widget.ConstraintLayout>
