@@ -95,24 +95,19 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
 
     @SuppressLint("InlinedApi")
     override fun onDoubleTapConfirmed(event: MotionEvent) {
-        performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
+        when {
+            event.x < displayMetrics.widthPixels / 3f -> appLauncher.launch(App.SIMPLY_TRANSLATE)
+            event.x < displayMetrics.widthPixels * 2f / 3f -> appLauncher.launch(App.OPEN_CAMERA, true)
+            else -> appLauncher.launch(App.CALCULATOR)
+        }
+
     }
 
     @SuppressLint("InlinedApi")
     override fun onSingleLongTap(event: MotionEvent) {
         when {
-            event.x < displayMetrics.widthPixels / 3f -> toggleFlashLight()
-            event.x < displayMetrics.widthPixels * 2f / 3f -> appLauncher.launch(App.OPEN_CAMERA)
+            event.x < displayMetrics.widthPixels * 2f / 3f -> performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
             else -> performGlobalAction(GLOBAL_ACTION_TAKE_SCREENSHOT)
-        }
-        Log.v("INFO", "long tap")
-    }
-
-    override fun onDoubleLongTap(event: MotionEvent) {
-        when {
-            event.x < displayMetrics.widthPixels / 3f -> appLauncher.launch(App.SIMPLY_TRANSLATE)
-            event.x < displayMetrics.widthPixels * 2f / 3f -> appLauncher.launch(App.GRAPHENEOS_CAMERA, true)
-            else -> appLauncher.launch(App.CALCULATOR)
         }
         Log.v("INFO", "long tap")
     }
@@ -121,7 +116,33 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         torch.torch(40)
     }
 
-    override fun onSingleHorizontalSlide(event: MotionEvent) {
+    override fun onSingleHorizontalSlide(event: MotionEvent, downEvent: MotionEvent): Boolean {
+        Log.v("INFO", "down: ${downEvent.x}, current: ${event.x}")
+
+        when {
+            event.x - downEvent.x > displayMetrics.widthPixels * 0.5f -> {
+                toggleFlashLight()
+                return false
+            }
+
+            downEvent.x - event.x > displayMetrics.widthPixels * 0.5f -> {
+                appLauncher.launch(App.OPEN_CAMERA, true)
+                return false
+            }
+        }
+
+        return true
+    }
+
+    override fun onDoubleHorizontalSlide(event: MotionEvent, downEvent: MotionEvent): Boolean {
+        if (shouldChangeBrightness) {
+            return changeBrightness(event, downEvent)
+        }
+
+        return false
+    }
+
+    fun changeBrightness(event: MotionEvent, downEvent: MotionEvent): Boolean {
         val totalWidth = displayMetrics.widthPixels
         val pos = ((event.x - padding) / (totalWidth - 2 * padding)).coerceIn(0f, 1f)
 
@@ -135,16 +156,19 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
             Settings.System.SCREEN_BRIGHTNESS,
             brightnessValue.toInt().coerceIn(0, 255),
         )
+
+        return true
     }
 
-    override fun onSingleHorizontalFlick(event: MotionEvent, velocity: Float) {
-        appLauncher.launch(App.OPEN_CAMERA, true)
-        Log.v("INFO", "Flick!")
-    }
-
-    override fun onDoubleHorizontalFlick(event: MotionEvent, velocity: Float) {
-        Log.v("INFO", "Double flick!")
-    }
+//    override fun onSingleHorizontalFlick(event: MotionEvent, velocity: Float) {
+//        appLauncher.launch(App.OPEN_CAMERA, true)
+//        Log.v("INFO", "Flick!")
+//    }
+//
+//    override fun onDoubleHorizontalFlick(event: MotionEvent, velocity: Float) {
+//        toggleFlashLight()
+//        Log.v("INFO", "Double flick!")
+//    }
 
     private fun getStatusBarHeight(): Int {
         val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")

@@ -17,6 +17,7 @@ private fun noMotionEvent() = MotionEvent.obtain(
 
 enum class MotionState {
     UNKNOWN,
+    CANCELLED,
     SINGLE_TAP,
     SINGLE_LONG_TAP,
     DOUBLE_TAP,
@@ -38,8 +39,8 @@ interface GestureListener {
     fun onSingleLongTap(event: MotionEvent) {}
     fun onDoubleLongTap(event: MotionEvent) {}
 
-    fun onSingleHorizontalSlide(event: MotionEvent) {}
-    fun onDoubleHorizontalSlide(event: MotionEvent) {}
+    fun onSingleHorizontalSlide(event: MotionEvent, downEvent: MotionEvent): Boolean { return true }
+    fun onDoubleHorizontalSlide(event: MotionEvent, downEvent: MotionEvent): Boolean { return true }
 
     fun onSingleHorizontalFlick(event: MotionEvent, velocity: Float) {}
     fun onDoubleHorizontalFlick(event: MotionEvent, velocity: Float) {}
@@ -51,8 +52,9 @@ class GestureDetector(private val gestureListener: GestureListener): View.OnTouc
     private val doubleTapThreshold = 300
     private val longTapThreshold = 400
     private val xMoveThreshold = 80
+    private val yMoveThreshold = 100
 
-    var flickVelocityThreshold = 1.25f
+    var flickVelocityThreshold = 1025f
 
     private var state: MotionState = MotionState.UNKNOWN
     private var downEvent: MotionEvent = noMotionEvent()
@@ -83,6 +85,7 @@ class GestureDetector(private val gestureListener: GestureListener): View.OnTouc
 
                 downEvent = MotionEvent.obtain(event)
             }
+
             MotionEvent.ACTION_MOVE -> {
                 if (!hasDownEventHappened()) {
                     // looks like we ended up here by an error
@@ -93,6 +96,10 @@ class GestureDetector(private val gestureListener: GestureListener): View.OnTouc
                 when (val prevState = state) {
                     // looks like we ended up here by an error, let's ignore
                     MotionState.UNKNOWN -> {}
+
+                    // future handling of move events has been explicitly cancelled
+                    // by returning false from the gesture handler
+                    MotionState.CANCELLED -> {}
 
                     // if we've already detected any kind of long taps or flicks
                     // ignore further motion events
@@ -107,6 +114,10 @@ class GestureDetector(private val gestureListener: GestureListener): View.OnTouc
                         // - a long tap
 
                         when {
+                            abs(event.y - downEvent.y) > yMoveThreshold -> {
+                                Log.v("INFO", "skipping vertical swipe")
+                            }
+
                             // either a horizontal slide or flick
                             abs(event.x - downEvent.x) > xMoveThreshold -> {
                                 // if it's fast, it's a flick
@@ -134,11 +145,17 @@ class GestureDetector(private val gestureListener: GestureListener): View.OnTouc
                                         when (prevState) {
                                             MotionState.SINGLE_TAP -> {
                                                 state = MotionState.SINGLE_HORIZONTAL_SLIDE
-                                                gestureListener.onSingleHorizontalSlide(event)
+                                                if (!gestureListener.onSingleHorizontalSlide(event, downEvent)) {
+                                                    // cancel movement processing if requested by handler
+                                                    state = MotionState.CANCELLED
+                                                }
                                             }
                                             MotionState.DOUBLE_TAP -> {
                                                 state = MotionState.DOUBLE_HORIZONTAL_SLIDE
-                                                gestureListener.onDoubleHorizontalSlide(event)
+                                                if (!gestureListener.onDoubleHorizontalSlide(event, downEvent)) {
+                                                    // cancel movement processing if requested by handler
+                                                    state = MotionState.CANCELLED
+                                                }
                                             }
                                             else -> {}
                                         }
@@ -163,10 +180,22 @@ class GestureDetector(private val gestureListener: GestureListener): View.OnTouc
                         }
                     }
 
-                    MotionState.SINGLE_HORIZONTAL_SLIDE -> gestureListener.onSingleHorizontalSlide(event)
-                    MotionState.DOUBLE_HORIZONTAL_SLIDE -> gestureListener.onDoubleHorizontalSlide(event)
+                    MotionState.SINGLE_HORIZONTAL_SLIDE -> {
+                        if (!gestureListener.onSingleHorizontalSlide(event, downEvent)) {
+                            // cancel movement processing if requested by handler
+                            state = MotionState.CANCELLED
+                        }
+                    }
+
+                    MotionState.DOUBLE_HORIZONTAL_SLIDE -> {
+                        if (!gestureListener.onDoubleHorizontalSlide(event, downEvent)) {
+                            // cancel movement processing if requested by handler
+                            state = MotionState.CANCELLED
+                        }
+                    }
                 }
             }
+
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
                 when (state) {
                     MotionState.SINGLE_TAP -> gestureListener.onSingleTapConfirmed(event)
