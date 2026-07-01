@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace 'fr.netstat.brightnessslider'
-    compileSdk 33
+    compileSdk 35
 
     defaultConfig {
         applicationId "fr.netstat.brightnessslider"
-        minSdk 24
-        targetSdk 33
+        minSdk 30
+        targetSdk 35
         versionCode 1
         versionName "1.0"
 
@@ -32,6 +32,11 @@ android {
     }
     buildFeatures {
         viewBinding true
+    }
+    packagingOptions {
+        dex {
+            useLegacyPackaging true
+        }
     }
 }
 

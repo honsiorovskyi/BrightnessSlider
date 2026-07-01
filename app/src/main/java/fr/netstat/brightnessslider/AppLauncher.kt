@@ -2,7 +2,6 @@ package fr.netstat.brightnessslider
 
 import android.app.ActivityOptions
 import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Rect
 
 enum class Ratio(val xw: Int, val xh: Int) {
@@ -46,8 +45,9 @@ enum class WindowMode(private val rw: Int, private val rh: Int, private val scal
 }
 
 enum class App(val packageId: String, val windowMode: WindowMode = WindowMode.Fullscreen) {
-    CALCULATOR("com.android.calculator2", WindowMode.Medium10x16),
-    SIMPLY_TRANSLATE("com.simplytranslate_mobile", WindowMode.Large9x16),
+    CALCULATOR("com.android.calculator2", WindowMode.Fullscreen),
+    SIMPLY_TRANSLATE("com.simplytranslate_mobile", WindowMode.Fullscreen),
+    OFFLINE_TRANSLATOR("dev.davidv.translator", WindowMode.Fullscreen),
     OPEN_CAMERA("net.sourceforge.opencamera", WindowMode.Fullscreen),
     GRAPHENEOS_CAMERA("app.grapheneos.camera", WindowMode.Fullscreen),
 }

@@ -2,8 +2,9 @@ package fr.netstat.brightnessslider
 
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
-import android.app.KeyguardManager
+import android.content.res.Configuration
 import android.graphics.PixelFormat
+import android.media.AudioAttributes
 import android.provider.Settings
 import android.util.DisplayMetrics
 import android.util.Log
@@ -17,8 +18,9 @@ import fr.netstat.brightnessslider.preferences.Preferences
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
-
 
 class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
     companion object {
@@ -32,8 +34,9 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
     private val gestureListener: GestureListener = this
     private val gestureDetector = GestureDetector(gestureListener)
 
+    private val statusBarHeightDetector = StatusBarHeightDetector(this)
+
     private val appLauncher = AppLauncher(this)
-    private lateinit var displayMetrics: DisplayMetrics
 
     private lateinit var statusBarView: View
     private lateinit var preferences: Preferences
@@ -50,8 +53,6 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         statusBarView = View(this)
         preferences = Preferences(this)
         torch = Torch(this)
-
-        displayMetrics = getDisplayMetrics(this)
 
         updateSettings()
 
@@ -73,15 +74,15 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         @Suppress("DEPRECATION")
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
-            getStatusBarHeight(),
+            statusBarHeightDetector.height,
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
-                or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                or WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR // Deprecated
-                or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                    or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                    or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                    or WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR // Deprecated
+                    or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
 //            or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE  // <= SDK30 ??
-            PixelFormat.TRANSLUCENT,
+            PixelFormat.TRANSPARENT,
         ).apply {
             gravity = Gravity.TOP
         }
@@ -96,37 +97,70 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
     @SuppressLint("InlinedApi")
     override fun onDoubleTapConfirmed(event: MotionEvent) {
         when {
-            event.x < displayMetrics.widthPixels / 3f -> appLauncher.launch(App.SIMPLY_TRANSLATE)
-            event.x < displayMetrics.widthPixels * 2f / 3f -> appLauncher.launch(App.OPEN_CAMERA, true)
-            else -> appLauncher.launch(App.CALCULATOR)
-        }
+            event.x < screenWidth / 3f -> appLauncher.launch(App.OFFLINE_TRANSLATOR, false)
+            event.x < screenWidth * 2f / 3f -> appLauncher.launch(
+                App.OPEN_CAMERA,
+                true
+            )
 
+            else -> appLauncher.launch(App.CALCULATOR, false)
+        }
     }
 
-    @SuppressLint("InlinedApi")
     override fun onSingleLongTap(event: MotionEvent) {
+        Log.v("INFO", "single long tap at ${event.x}, ${event.y}")
+        vibrate(5)
+
+        // as android.os.Vibrator).vibrate(android.os.VibrationEffect.createOneShot(50L, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+    }
+
+//    fun hideView() {
+//        vibrate(5)
+//
+//        val params = statusBarView.layoutParams as WindowManager.LayoutParams
+//
+//        params.height = 0
+//        windowManager().updateViewLayout(statusBarView, params)
+//
+//        // Restore height after 5 seconds
+//        android.os.Handler(mainLooper).postDelayed({
+//            params.height = getStatusBarHeight()
+//            windowManager().updateViewLayout(statusBarView, params)
+//        }, 5000)
+//    }
+
+    @SuppressLint("InlinedApi")
+    override fun onDoubleLongTap(event: MotionEvent) {
+        vibrate(5)
+
         when {
-            event.x < displayMetrics.widthPixels * 2f / 3f -> performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
+            event.x < screenWidth * 0.5f -> toggleFlashLight()
             else -> performGlobalAction(GLOBAL_ACTION_TAKE_SCREENSHOT)
         }
         Log.v("INFO", "long tap")
     }
 
+
     private fun toggleFlashLight() {
         torch.torch(40)
     }
 
+    @SuppressLint("InlinedApi")
     override fun onSingleHorizontalSlide(event: MotionEvent, downEvent: MotionEvent): Boolean {
         Log.v("INFO", "down: ${downEvent.x}, current: ${event.x}")
 
         when {
-            event.x - downEvent.x > displayMetrics.widthPixels * 0.5f -> {
-                toggleFlashLight()
+            event.x - downEvent.x > screenWidth * 0.5f -> {
+                performGlobalAction(
+                    GLOBAL_ACTION_LOCK_SCREEN
+                )
                 return false
             }
 
-            downEvent.x - event.x > displayMetrics.widthPixels * 0.5f -> {
-                appLauncher.launch(App.OPEN_CAMERA, true)
+            downEvent.x - event.x > screenWidth * 0.5f -> {
+                performGlobalAction(
+                    GLOBAL_ACTION_LOCK_SCREEN
+                )
                 return false
             }
         }
@@ -134,22 +168,23 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         return true
     }
 
-    override fun onDoubleHorizontalSlide(event: MotionEvent, downEvent: MotionEvent): Boolean {
-        if (shouldChangeBrightness) {
-            return changeBrightness(event, downEvent)
+    override fun onSingleLongTapHorizontalSlide(
+        event: MotionEvent,
+        downEvent: MotionEvent
+    ): Boolean {
+        val pos = ((event.x - padding) / (screenWidth - 2 * padding)).coerceIn(0f, 1f)
+
+
+        val brightnessValue = when (useLogarithmicBrightness) {
+            true -> {
+                255.0.pow(pos.toDouble()) - 1
+            }
+
+            false -> {
+                255 * pos
+            }
         }
 
-        return false
-    }
-
-    fun changeBrightness(event: MotionEvent, downEvent: MotionEvent): Boolean {
-        val totalWidth = displayMetrics.widthPixels
-        val pos = ((event.x - padding) / (totalWidth - 2 * padding)).coerceIn(0f, 1f)
-
-        val brightnessValue = when(useLogarithmicBrightness) {
-            true ->  { 255.0.pow(pos.toDouble()) - 1 }
-            false -> { 255*pos }
-        }
 
         Settings.System.putInt(
             contentResolver,
@@ -170,11 +205,6 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
 //        Log.v("INFO", "Double flick!")
 //    }
 
-    private fun getStatusBarHeight(): Int {
-        val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
-        return if (resourceId != 0) resources.getDimensionPixelSize(resourceId) else 120
-    }
-
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         when (event.eventType) {
             // We need to disable the view when screen is locked because the brightness
@@ -194,13 +224,31 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
     override fun onInterrupt() {}
 
 
+    private fun vibrate(milliseconds: Long = 30L) {
+        val vibrator = getSystemService(VIBRATOR_SERVICE) as android.os.Vibrator
+        vibrator.vibrate(
+            milliseconds, AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .build()
+        )
+    }
 
     private fun updateViewVisibility() {
         statusBarView.visibility = when {
-            !preferences.isGloballyEnabled || isLandscape(this) /*|| isDeviceLocked()*/ -> View.INVISIBLE
+            !preferences.isGloballyEnabled /*|| isLandscape(this)*/ /*|| isDeviceLocked()*/ -> View.INVISIBLE
             else -> View.VISIBLE
         }
     }
+
+    private val screenWidth: Int
+        get() = if (isLandscape(this)) {
+            max(displayMetrics.widthPixels, displayMetrics.heightPixels)
+        } else {
+            min(displayMetrics.widthPixels, displayMetrics.heightPixels)
+        }
+
+    private val displayMetrics: DisplayMetrics
+        get() = getDisplayMetrics(this)
 
     private fun updateSettings() {
         // change brightness scale
@@ -208,10 +256,23 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
 
         // gesture detector settings
         gestureDetector.flickVelocityThreshold = preferences.flickSensitivityThreshold
-        Toast.makeText(this, "%f".format(gestureDetector.flickVelocityThreshold), Toast.LENGTH_SHORT).show()
+        Toast.makeText(
+            this,
+            "%f".format(gestureDetector.flickVelocityThreshold),
+            Toast.LENGTH_SHORT
+        ).show()
 
         // update status bar visibility based on the global setting and device state
         updateViewVisibility()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        Log.v("INFO", "Configuration changed: ${newConfig.orientation}")
+
+        // Update the status bar height when the configuration changes
+        val params = statusBarView.layoutParams as WindowManager.LayoutParams
+        params.height = statusBarHeightDetector.height
+        windowManager().updateViewLayout(statusBarView, params)
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -219,4 +280,3 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         updateSettings()
     }
 }
-

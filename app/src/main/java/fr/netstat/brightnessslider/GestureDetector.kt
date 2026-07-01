@@ -24,8 +24,10 @@ enum class MotionState {
     DOUBLE_LONG_TAP,
     SINGLE_HORIZONTAL_SLIDE,
     DOUBLE_HORIZONTAL_SLIDE,
+    SINGLE_LONG_TAP_HORIZONTAL_SLIDE,
     SINGLE_HORIZONTAL_FLICK,
     DOUBLE_HORIZONTAL_FLICK,
+    SINGLE_LONG_TAP_HORIZONTAL_FLICK
 }
 
 interface GestureListener {
@@ -41,9 +43,11 @@ interface GestureListener {
 
     fun onSingleHorizontalSlide(event: MotionEvent, downEvent: MotionEvent): Boolean { return true }
     fun onDoubleHorizontalSlide(event: MotionEvent, downEvent: MotionEvent): Boolean { return true }
+    fun onSingleLongTapHorizontalSlide(event: MotionEvent, downEvent: MotionEvent): Boolean { return true }
 
     fun onSingleHorizontalFlick(event: MotionEvent, velocity: Float) {}
     fun onDoubleHorizontalFlick(event: MotionEvent, velocity: Float) {}
+    fun onSingleLongTapHorizontalFlick(event: MotionEvent, velocity: Float) {}
 
     fun onUnTap(event: MotionEvent) {}
 }
@@ -103,10 +107,12 @@ class GestureDetector(private val gestureListener: GestureListener): View.OnTouc
 
                     // if we've already detected any kind of long taps or flicks
                     // ignore further motion events
-                    MotionState.SINGLE_LONG_TAP, MotionState.DOUBLE_LONG_TAP,
-                    MotionState.SINGLE_HORIZONTAL_FLICK, MotionState.DOUBLE_HORIZONTAL_FLICK -> {}
+                    MotionState.DOUBLE_LONG_TAP,
+                    MotionState.SINGLE_HORIZONTAL_FLICK,
+                    MotionState.DOUBLE_HORIZONTAL_FLICK,
+                    MotionState.SINGLE_LONG_TAP_HORIZONTAL_FLICK -> {}
 
-                    MotionState.SINGLE_TAP, MotionState.DOUBLE_TAP -> {
+                    MotionState.SINGLE_TAP, MotionState.DOUBLE_TAP, MotionState.SINGLE_LONG_TAP -> {
                         // user has tapped once or twice and possibly sliding now
                         // from here we can detect
                         // - a sliding event,
@@ -135,6 +141,10 @@ class GestureDetector(private val gestureListener: GestureListener): View.OnTouc
                                                 state = MotionState.DOUBLE_HORIZONTAL_FLICK
                                                 gestureListener.onDoubleHorizontalFlick(event, speed)
                                             }
+                                            MotionState.SINGLE_LONG_TAP -> {
+                                                state = MotionState.SINGLE_LONG_TAP_HORIZONTAL_FLICK
+                                                gestureListener.onSingleLongTapHorizontalFlick(event, speed)
+                                            }
                                             else -> {}
                                         }
                                     }
@@ -153,6 +163,13 @@ class GestureDetector(private val gestureListener: GestureListener): View.OnTouc
                                             MotionState.DOUBLE_TAP -> {
                                                 state = MotionState.DOUBLE_HORIZONTAL_SLIDE
                                                 if (!gestureListener.onDoubleHorizontalSlide(event, downEvent)) {
+                                                    // cancel movement processing if requested by handler
+                                                    state = MotionState.CANCELLED
+                                                }
+                                            }
+                                            MotionState.SINGLE_LONG_TAP -> {
+                                                state = MotionState.SINGLE_LONG_TAP_HORIZONTAL_SLIDE
+                                                if (!gestureListener.onSingleLongTapHorizontalSlide(event, downEvent)) {
                                                     // cancel movement processing if requested by handler
                                                     state = MotionState.CANCELLED
                                                 }
@@ -189,6 +206,13 @@ class GestureDetector(private val gestureListener: GestureListener): View.OnTouc
 
                     MotionState.DOUBLE_HORIZONTAL_SLIDE -> {
                         if (!gestureListener.onDoubleHorizontalSlide(event, downEvent)) {
+                            // cancel movement processing if requested by handler
+                            state = MotionState.CANCELLED
+                        }
+                    }
+
+                    MotionState.SINGLE_LONG_TAP_HORIZONTAL_SLIDE -> {
+                        if (!gestureListener.onSingleLongTapHorizontalSlide(event, downEvent)) {
                             // cancel movement processing if requested by handler
                             state = MotionState.CANCELLED
                         }

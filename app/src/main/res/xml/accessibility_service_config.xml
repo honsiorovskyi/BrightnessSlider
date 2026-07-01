@@ -4,6 +4,6 @@
     android:description="@string/accessibility_service_description"
     android:settingsActivity="fr.netstat.brightnessslider.MainActivity"
     android:accessibilityEventTypes="typeWindowStateChanged"
-    android:accessibilityFlags="flagIncludeNotImportantViews|flagReportViewIds"
-    android:canRetrieveWindowContent="false"
+    android:accessibilityFlags="flagIncludeNotImportantViews|flagReportViewIds|flagRetrieveInteractiveWindows"
+    android:canRetrieveWindowContent="true"
 />
