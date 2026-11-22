@@ -261,6 +261,7 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         // edge back gesture settings
         edgeBackGesture?.let {
             it.setEdges(preferences.backGestureEdges)
+            it.setEdgeWidth(preferences.backGestureWidth)
             it.setRecentsFraction(preferences.recentsFraction)
             it.setEnabled(preferences.isGloballyEnabled)
         }

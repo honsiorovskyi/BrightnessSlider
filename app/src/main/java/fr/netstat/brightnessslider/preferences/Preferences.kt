@@ -52,6 +52,14 @@ class Preferences(private val context: Context) {
         }
 
     // read-only: the value is written by the ListPreference as a string
+    val backGestureWidth: Int
+        get() = run {
+            val default = context.getString(R.string.lst_back_gesture_width_default)
+            sharedPrefs.getString(context.getString(R.string.lst_back_gesture_width_id), default)
+                ?.toInt() ?: default.toInt()
+        }
+
+    // read-only: the value is written by the ListPreference as a string
     val recentsFraction: Float
         get() = run {
             val default = context.getString(R.string.lst_recents_threshold_default)

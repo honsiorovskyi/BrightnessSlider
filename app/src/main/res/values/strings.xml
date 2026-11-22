@@ -21,6 +21,10 @@
     <string name="lst_back_gesture_edges_label">Back gesture edges</string>
     <string name="lst_back_gesture_edges_summary">Drag inward from a screen edge and release to go back. Tap the edge to disable it for 5 seconds.</string>
     <string name="lst_back_gesture_edges_default">none</string>
+    <string name="lst_back_gesture_width_id">lst_back_gesture_width_id</string>
+    <string name="lst_back_gesture_width_label">Edge width</string>
+    <string name="lst_back_gesture_width_summary">How far from the screen edge a drag can start. Swipes coming in from the bezel are first detected a bit away from the edge, so a too narrow zone misses them.</string>
+    <string name="lst_back_gesture_width_default">32</string>
     <string name="lst_recents_threshold_id">lst_recents_threshold_id</string>
     <string name="lst_recents_threshold_label">Recents threshold</string>
     <string name="lst_recents_threshold_summary">Dragging further than this share of the screen width opens Recents instead of going back.</string>

@@ -28,6 +28,20 @@
         <item>Right</item>
         <item>Both</item>
     </string-array>
+    <string-array name="arr_back_gesture_width_values">
+        <item>16</item>
+        <item>24</item>
+        <item>32</item>
+        <item>40</item>
+        <item>48</item>
+    </string-array>
+    <string-array name="arr_back_gesture_width_names">
+        <item>16 dp</item>
+        <item>24 dp</item>
+        <item>32 dp</item>
+        <item>40 dp</item>
+        <item>48 dp</item>
+    </string-array>
     <string-array name="arr_recents_threshold_values">
         <item>0.4</item>
         <item>0.5</item>

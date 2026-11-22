@@ -34,7 +34,7 @@ class EdgeBackGesture(
     private enum class State { IDLE, PENDING, DRAGGING, VERTICAL }
 
     private val density = service.resources.displayMetrics.density
-    private val edgeWidthPx = (EDGE_WIDTH_DP * density).toInt()
+    private var edgeWidthPx = (DEFAULT_EDGE_WIDTH_DP * density).toInt()
     private val backThresholdPx = BACK_THRESHOLD_DP * density
     private val slop = ViewConfiguration.get(service).scaledTouchSlop
 
@@ -66,6 +66,13 @@ class EdgeBackGesture(
         if (edges == newEdges) return
         edges = newEdges
         syncWindows()
+    }
+
+    fun setEdgeWidth(widthDp: Int) {
+        val widthPx = (widthDp * density).toInt()
+        if (edgeWidthPx == widthPx) return
+        edgeWidthPx = widthPx
+        updateLayout()
     }
 
     fun setRecentsFraction(fraction: Float) {
@@ -285,7 +292,7 @@ class EdgeBackGesture(
     }
 
     companion object {
-        private const val EDGE_WIDTH_DP = 20
+        private const val DEFAULT_EDGE_WIDTH_DP = 32
         private const val BACK_THRESHOLD_DP = 64
         private const val TAP_DISABLE_MS = 5000L
         private const val CANCEL_DISABLE_MS = 2000L
