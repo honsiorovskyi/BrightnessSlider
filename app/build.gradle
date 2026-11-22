@@ -3,6 +3,19 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+// Release signing: read from keystore.properties in the project root (gitignored), or from the
+// RELEASE_STORE_FILE / RELEASE_STORE_PASSWORD / RELEASE_KEY_ALIAS / RELEASE_KEY_PASSWORD
+// environment variables. Without either, the release build is left unsigned.
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+def signingProperty = { String name ->
+    keystoreProperties.getProperty(name) ?: System.getenv('RELEASE_' + name.replaceAll(/([A-Z])/, '_$1').toUpperCase())
+}
+def releaseStoreFile = signingProperty('storeFile')
+
 android {
     namespace 'fr.netstat.brightnessslider'
     compileSdk 35
@@ -17,8 +30,22 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (releaseStoreFile) {
+            release {
+                storeFile rootProject.file(releaseStoreFile)
+                storePassword signingProperty('storePassword')
+                keyAlias signingProperty('keyAlias')
+                keyPassword signingProperty('keyPassword')
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (releaseStoreFile) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }

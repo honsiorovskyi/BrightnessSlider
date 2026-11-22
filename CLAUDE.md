@@ -11,6 +11,7 @@ Single-module Android app (Kotlin, package `fr.netstat.brightnessslider`, minSdk
 ```sh
 ./gradlew assembleDebug          # build debug APK -> app/build/outputs/apk/debug/
 ./gradlew assemble               # what CI runs (.github/workflows/build.yml, JDK 17)
+./gradlew assembleRelease        # release APK, signed if keystore.properties or RELEASE_* env vars are set (see app/build.gradle)
 ./gradlew installDebug           # install on a connected device/emulator
 ./gradlew lint
 ```
