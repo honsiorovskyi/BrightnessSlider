@@ -348,8 +348,8 @@ private class BackArrowView(context: Context) : View(context) {
         bubble.set(cx - radius, cy - radius, cx + radius, cy + radius)
         canvas.drawRoundRect(bubble, radius, radius, bubblePaint)
 
-        // "<" for the left edge and ">" for the right edge
-        val d = if (left) 1f else -1f
+        // ">" for the left edge and "<" for the right edge (pointing away from the edge)
+        val d = if (left) -1f else 1f
         val s = chevronSize
         path.reset()
         if (recentsArmed) {
