@@ -22,6 +22,83 @@
             android:key="@string/lst_flick_sensitivity_id"
             android:title="@string/lst_flick_sensitivity_label"
             app:summary="@string/lst_flick_sensitivity_summary" />
+        <MultiSelectListPreference
+            android:defaultValue="@array/arr_lockscreen_gesture_default"
+            android:entries="@array/arr_lockscreen_gesture_names"
+            android:entryValues="@array/arr_lockscreen_gesture_values"
+            android:key="@string/mlst_lockscreen_gestures_id"
+            android:title="@string/mlst_lockscreen_gestures_label"
+            app:summary="@string/mlst_lockscreen_gestures_summary" />
+
+    </PreferenceCategory>
+    <PreferenceCategory
+        app:title="@string/grp_slide_actions"
+        app:summary="@string/grp_slide_actions_summary">
+
+        <ListPreference
+            android:defaultValue="@string/lst_action_single_slide_default"
+            android:entries="@array/arr_slide_action_names"
+            android:entryValues="@array/arr_slide_action_values"
+            android:key="@string/lst_action_single_slide_id"
+            android:title="@string/lst_action_single_slide_label"
+            app:useSimpleSummaryProvider="true" />
+        <ListPreference
+            android:defaultValue="@string/lst_action_long_tap_slide_default"
+            android:entries="@array/arr_slide_action_names"
+            android:entryValues="@array/arr_slide_action_values"
+            android:key="@string/lst_action_long_tap_slide_id"
+            android:title="@string/lst_action_long_tap_slide_label"
+            app:useSimpleSummaryProvider="true" />
+        <ListPreference
+            android:defaultValue="@string/lst_action_double_tap_slide_default"
+            android:entries="@array/arr_slide_action_names"
+            android:entryValues="@array/arr_slide_action_values"
+            android:key="@string/lst_action_double_tap_slide_id"
+            android:title="@string/lst_action_double_tap_slide_label"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+    <PreferenceCategory app:title="@string/grp_double_tap_actions">
+
+        <ListPreference
+            android:defaultValue="@string/lst_action_double_tap_left_default"
+            android:entries="@array/arr_tap_action_names"
+            android:entryValues="@array/arr_tap_action_values"
+            android:key="@string/lst_action_double_tap_left_id"
+            android:title="@string/lst_action_double_tap_left_label"
+            app:useSimpleSummaryProvider="true" />
+        <ListPreference
+            android:defaultValue="@string/lst_action_double_tap_middle_default"
+            android:entries="@array/arr_tap_action_names"
+            android:entryValues="@array/arr_tap_action_values"
+            android:key="@string/lst_action_double_tap_middle_id"
+            android:title="@string/lst_action_double_tap_middle_label"
+            app:useSimpleSummaryProvider="true" />
+        <ListPreference
+            android:defaultValue="@string/lst_action_double_tap_right_default"
+            android:entries="@array/arr_tap_action_names"
+            android:entryValues="@array/arr_tap_action_values"
+            android:key="@string/lst_action_double_tap_right_id"
+            android:title="@string/lst_action_double_tap_right_label"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+    <PreferenceCategory app:title="@string/grp_double_long_tap_actions">
+
+        <ListPreference
+            android:defaultValue="@string/lst_action_double_long_tap_left_default"
+            android:entries="@array/arr_tap_action_names"
+            android:entryValues="@array/arr_tap_action_values"
+            android:key="@string/lst_action_double_long_tap_left_id"
+            android:title="@string/lst_action_double_long_tap_left_label"
+            app:useSimpleSummaryProvider="true" />
+        <ListPreference
+            android:defaultValue="@string/lst_action_double_long_tap_right_default"
+            android:entries="@array/arr_tap_action_names"
+            android:entryValues="@array/arr_tap_action_values"
+            android:key="@string/lst_action_double_long_tap_right_id"
+            android:title="@string/lst_action_double_long_tap_right_label"
+            app:useSimpleSummaryProvider="true" />
 
     </PreferenceCategory>
     <PreferenceCategory app:title="@string/grp_back_gesture_settings">

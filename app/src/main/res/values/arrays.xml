@@ -56,4 +56,77 @@
         <item>70%</item>
         <item>80%</item>
     </string-array>
+    <string-array name="arr_slide_action_values">
+        <item>none</item>
+        <item>brightness</item>
+        <item>lock_screen</item>
+        <item>screenshot</item>
+        <item>torch</item>
+        <item>notifications</item>
+        <item>quick_settings</item>
+        <item>recents</item>
+        <item>home</item>
+        <item>back</item>
+        <item>power_dialog</item>
+    </string-array>
+    <string-array name="arr_slide_action_names">
+        <item>None</item>
+        <item>Brightness</item>
+        <item>Lock screen</item>
+        <item>Screenshot</item>
+        <item>Toggle torch</item>
+        <item>Open notifications</item>
+        <item>Open quick settings</item>
+        <item>Recents</item>
+        <item>Home</item>
+        <item>Back</item>
+        <item>Power menu</item>
+    </string-array>
+    <string-array name="arr_tap_action_values">
+        <item>none</item>
+        <item>lock_screen</item>
+        <item>screenshot</item>
+        <item>torch</item>
+        <item>notifications</item>
+        <item>quick_settings</item>
+        <item>recents</item>
+        <item>home</item>
+        <item>back</item>
+        <item>power_dialog</item>
+    </string-array>
+    <string-array name="arr_tap_action_names">
+        <item>None</item>
+        <item>Lock screen</item>
+        <item>Screenshot</item>
+        <item>Toggle torch</item>
+        <item>Open notifications</item>
+        <item>Open quick settings</item>
+        <item>Recents</item>
+        <item>Home</item>
+        <item>Back</item>
+        <item>Power menu</item>
+    </string-array>
+    <string-array name="arr_lockscreen_gesture_values">
+        <item>single_slide</item>
+        <item>long_tap_slide</item>
+        <item>double_tap_slide</item>
+        <item>double_tap_left</item>
+        <item>double_tap_middle</item>
+        <item>double_tap_right</item>
+        <item>double_long_tap_left</item>
+        <item>double_long_tap_right</item>
+    </string-array>
+    <string-array name="arr_lockscreen_gesture_names">
+        <item>Slide</item>
+        <item>Long tap, then slide</item>
+        <item>Double tap, then slide</item>
+        <item>Double tap, left third</item>
+        <item>Double tap, middle third</item>
+        <item>Double tap, right third</item>
+        <item>Double tap and hold, left half</item>
+        <item>Double tap and hold, right half</item>
+    </string-array>
+    <string-array name="arr_lockscreen_gesture_default">
+        <item>double_tap_middle</item>
+    </string-array>
 </resources>

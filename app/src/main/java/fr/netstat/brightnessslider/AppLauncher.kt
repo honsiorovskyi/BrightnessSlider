@@ -3,6 +3,7 @@ package fr.netstat.brightnessslider
 import android.app.ActivityOptions
 import android.content.Context
 import android.graphics.Rect
+import android.util.Log
 
 enum class Ratio(val xw: Int, val xh: Int) {
     R9X16(9, 16),
@@ -44,33 +45,31 @@ enum class WindowMode(private val rw: Int, private val rh: Int, private val scal
     }
 }
 
-enum class App(val packageId: String, val windowMode: WindowMode = WindowMode.Fullscreen) {
-    CALCULATOR("com.android.calculator2", WindowMode.Fullscreen),
-    SIMPLY_TRANSLATE("com.simplytranslate_mobile", WindowMode.Fullscreen),
-    OFFLINE_TRANSLATOR("dev.davidv.translator", WindowMode.Fullscreen),
-    OPEN_CAMERA("net.sourceforge.opencamera", WindowMode.Fullscreen),
-    GRAPHENEOS_CAMERA("app.grapheneos.camera", WindowMode.Fullscreen),
-}
-
-
 class AppLauncher(private val ctx: Context) {
-    fun launch(app: App, includeLockscreen: Boolean = false) {
+    fun launch(
+        packageId: String,
+        windowMode: WindowMode = WindowMode.Fullscreen,
+        includeLockscreen: Boolean = false,
+    ) {
         val isLocked = isDeviceLocked(ctx)
 
         if (!includeLockscreen && isLocked) {
             return
         }
 
-        val intent = ctx.packageManager.getLaunchIntentForPackage(app.packageId)
+        val intent = ctx.packageManager.getLaunchIntentForPackage(packageId) ?: run {
+            Log.w("WARN", "no launch intent for $packageId, is it installed?")
+            return
+        }
         val options = ActivityOptions.makeBasic()
         val bundle = when {
             // fullscreen if fullscreen requested and also always on lock screen
-            app.windowMode == WindowMode.Fullscreen || isLocked -> options.toBundle()
+            windowMode == WindowMode.Fullscreen || isLocked -> options.toBundle()
 
             // otherwise try free-form window
             else ->  {
                 // window size
-                options.setLaunchBounds(app.windowMode.bounds(ctx))
+                options.setLaunchBounds(windowMode.bounds(ctx))
 
                 // set window mode
                 // Build.VERSION.SDK_INT >= 28

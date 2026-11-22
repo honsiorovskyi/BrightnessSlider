@@ -16,6 +16,7 @@ import fr.netstat.brightnessslider.preferences.Preferences
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -43,6 +44,9 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
     private var edgeBackGesture: EdgeBackGesture? = null
 
     private var useLogarithmicBrightness = false
+
+    private var actions: Map<GestureSlot, BarAction> = emptyMap()
+    private var lockscreenSlots: Set<GestureSlot> = emptySet()
 
     private val padding = 100 // Left and right "deadzone"
 
@@ -100,85 +104,88 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         return windowManager
     }
 
-    @SuppressLint("InlinedApi")
     override fun onDoubleTapConfirmed(event: MotionEvent) {
-        when {
-            event.x < windowWidth / 3f -> appLauncher.launch(App.OFFLINE_TRANSLATOR, false)
-            event.x < windowWidth * 2f / 3f -> appLauncher.launch(
-                App.OPEN_CAMERA,
-                true
-            )
-
-            else -> appLauncher.launch(App.CALCULATOR, false)
-        }
+        perform(
+            when {
+                event.x < windowWidth / 3f -> GestureSlot.DOUBLE_TAP_LEFT
+                event.x < windowWidth * 2f / 3f -> GestureSlot.DOUBLE_TAP_MIDDLE
+                else -> GestureSlot.DOUBLE_TAP_RIGHT
+            }
+        )
     }
 
     override fun onSingleLongTap(event: MotionEvent) {
         Log.v("INFO", "single long tap at ${event.x}, ${event.y}")
-        vibrate(this, 5)
 
-        // as android.os.Vibrator).vibrate(android.os.VibrationEffect.createOneShot(50L, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
-    }
-
-//    fun hideView() {
-//        vibrate(this, 5)
-//
-//        val params = statusBarView.layoutParams as WindowManager.LayoutParams
-//
-//        params.height = 0
-//        windowManager().updateViewLayout(statusBarView, params)
-//
-//        // Restore height after 5 seconds
-//        android.os.Handler(mainLooper).postDelayed({
-//            params.height = getStatusBarHeight()
-//            windowManager().updateViewLayout(statusBarView, params)
-//        }, 5000)
-//    }
-
-    @SuppressLint("InlinedApi")
-    override fun onDoubleLongTap(event: MotionEvent) {
-        vibrate(this, 5)
-
-        when {
-            event.x < windowWidth * 0.5f -> toggleFlashLight()
-            else -> performGlobalAction(GLOBAL_ACTION_TAKE_SCREENSHOT)
+        // tells the user they can start sliding
+        if (actions[GestureSlot.LONG_TAP_SLIDE] != BarAction.None) {
+            vibrate(this, 5)
         }
-        Log.v("INFO", "long tap")
     }
 
+    override fun onDoubleLongTap(event: MotionEvent) {
+        val slot = when {
+            event.x < windowWidth * 0.5f -> GestureSlot.DOUBLE_LONG_TAP_LEFT
+            else -> GestureSlot.DOUBLE_LONG_TAP_RIGHT
+        }
+
+        if (actions[slot] != BarAction.None) {
+            vibrate(this, 5)
+        }
+        perform(slot)
+    }
+
+    override fun onSingleHorizontalSlide(event: MotionEvent, downEvent: MotionEvent): Boolean =
+        slide(GestureSlot.SINGLE_SLIDE, event, downEvent)
+
+    override fun onSingleLongTapHorizontalSlide(event: MotionEvent, downEvent: MotionEvent): Boolean =
+        slide(GestureSlot.LONG_TAP_SLIDE, event, downEvent)
+
+    override fun onDoubleHorizontalSlide(event: MotionEvent, downEvent: MotionEvent): Boolean =
+        slide(GestureSlot.DOUBLE_TAP_SLIDE, event, downEvent)
+
+    // returns false to stop following the slide
+    private fun slide(slot: GestureSlot, event: MotionEvent, downEvent: MotionEvent): Boolean {
+        Log.v("INFO", "$slot down: ${downEvent.x}, current: ${event.x}")
+
+        return when (actions[slot] ?: BarAction.None) {
+            BarAction.None -> false
+
+            BarAction.Brightness -> {
+                setBrightness(event.x)
+                true
+            }
+
+            // one-shot actions fire once the finger has slid across half the bar
+            else -> if (abs(event.x - downEvent.x) > windowWidth * 0.5f) {
+                perform(slot)
+                false
+            } else {
+                true
+            }
+        }
+    }
+
+    private fun perform(slot: GestureSlot) {
+        when (val action = actions[slot] ?: BarAction.None) {
+            BarAction.None -> {}
+            // only meaningful while sliding, see slide()
+            BarAction.Brightness -> {}
+            BarAction.Torch -> toggleFlashLight()
+            is BarAction.Global -> performGlobalAction(action.action)
+            is BarAction.LaunchApp -> appLauncher.launch(
+                action.packageId,
+                includeLockscreen = slot in lockscreenSlots,
+            )
+        }
+    }
 
     private fun toggleFlashLight() {
         torch.torch(40)
     }
 
-    @SuppressLint("InlinedApi")
-    override fun onSingleHorizontalSlide(event: MotionEvent, downEvent: MotionEvent): Boolean {
-        Log.v("INFO", "down: ${downEvent.x}, current: ${event.x}")
-
-        when {
-            event.x - downEvent.x > windowWidth * 0.5f -> {
-                performGlobalAction(
-                    GLOBAL_ACTION_LOCK_SCREEN
-                )
-                return false
-            }
-
-            downEvent.x - event.x > windowWidth * 0.5f -> {
-                performGlobalAction(
-                    GLOBAL_ACTION_LOCK_SCREEN
-                )
-                return false
-            }
-        }
-
-        return true
-    }
-
-    override fun onSingleLongTapHorizontalSlide(
-        event: MotionEvent,
-        downEvent: MotionEvent
-    ): Boolean {
-        val pos = ((event.x - padding) / (windowWidth - 2 * padding)).coerceIn(0f, 1f)
+    private fun setBrightness(x: Float) {
+        val pos = ((x - padding) / (windowWidth - 2 * padding)).coerceIn(0f, 1f)
 
 
         val brightnessValue = when (useLogarithmicBrightness) {
@@ -197,9 +204,8 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
             Settings.System.SCREEN_BRIGHTNESS,
             brightnessValue.toInt().coerceIn(0, 255),
         )
-
-        return true
     }
+
 
 //    override fun onSingleHorizontalFlick(event: MotionEvent, velocity: Float) {
 //        appLauncher.launch(App.OPEN_CAMERA, true)
@@ -251,6 +257,10 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
     private fun updateSettings() {
         // change brightness scale
         useLogarithmicBrightness = preferences.useLogarithmicBrightness
+
+        // top bar gesture actions
+        actions = GestureSlot.entries.associateWith { preferences.action(it) }
+        lockscreenSlots = preferences.lockscreenSlots
 
         // gesture detector settings
         gestureDetector.flickVelocityThreshold = preferences.flickSensitivityThreshold

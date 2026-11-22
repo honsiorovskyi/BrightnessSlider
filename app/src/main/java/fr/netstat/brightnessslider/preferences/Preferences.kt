@@ -2,7 +2,9 @@ package fr.netstat.brightnessslider.preferences
 
 import android.content.Context
 import androidx.preference.PreferenceManager
+import fr.netstat.brightnessslider.BarAction
 import fr.netstat.brightnessslider.Edge
+import fr.netstat.brightnessslider.GestureSlot
 import fr.netstat.brightnessslider.R
 import fr.netstat.brightnessslider.SettingsUpdatedEvent
 import org.greenrobot.eventbus.EventBus
@@ -65,5 +67,17 @@ class Preferences(private val context: Context) {
             val default = context.getString(R.string.lst_recents_threshold_default)
             sharedPrefs.getString(context.getString(R.string.lst_recents_threshold_id), default)
                 ?.toFloat() ?: default.toFloat()
+        }
+
+    // read-only: the value is written by the ListPreference as a string
+    fun action(slot: GestureSlot): BarAction =
+        BarAction.parse(sharedPrefs.getString(context.getString(slot.keyRes), context.getString(slot.defaultRes)))
+
+    // read-only: the value is written by the MultiSelectListPreference
+    val lockscreenSlots: Set<GestureSlot>
+        get() = run {
+            val default = context.resources.getStringArray(R.array.arr_lockscreen_gesture_default).toSet()
+            val ids = sharedPrefs.getStringSet(context.getString(R.string.mlst_lockscreen_gestures_id), default) ?: default
+            GestureSlot.entries.filter { it.id in ids }.toSet()
         }
 }
