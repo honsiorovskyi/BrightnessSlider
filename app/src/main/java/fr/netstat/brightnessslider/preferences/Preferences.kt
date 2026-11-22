@@ -12,10 +12,10 @@ class Preferences(private val context: Context) {
 
     var isGloballyEnabled
         get() = run {
-            sharedPrefs.getBoolean(context.getString(R.string.shared_pref_is_globally_disabled), false)
+            sharedPrefs.getBoolean(context.getString(R.string.shared_pref_is_globally_enabled), false)
         }
         set(value) = run {
-            sharedPrefsEditor.putBoolean(context.getString(R.string.shared_pref_is_globally_disabled), value)
+            sharedPrefsEditor.putBoolean(context.getString(R.string.shared_pref_is_globally_enabled), value)
             sharedPrefsEditor.apply()
             EventBus.getDefault().post(SettingsUpdatedEvent(R.id.preferences))
         }
@@ -30,15 +30,11 @@ class Preferences(private val context: Context) {
             EventBus.getDefault().post(SettingsUpdatedEvent(R.id.preferences))
         }
 
-    var flickSensitivityThreshold
+    // read-only: the value is written by the ListPreference as a string
+    val flickSensitivityThreshold
         get() = run {
             val default = context.getString(R.string.lst_flick_sensitivity_default)
             sharedPrefs.getString(context.getString(R.string.lst_flick_sensitivity_id), default)
                 ?.toFloat() ?: default.toFloat()
-        }
-        set(value) = run {
-//            sharedPrefsEditor.putFloat(context.getString(R.string.lst_flick_sensitivity_id), value)
-//            sharedPrefsEditor.apply()
-//            EventBus.getDefault().post(SettingsUpdatedEvent(R.id.preferences))
         }
 }

@@ -13,7 +13,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
-import android.widget.Toast
 import fr.netstat.brightnessslider.preferences.Preferences
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
@@ -64,6 +63,7 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         super.onDestroy()
 
         instance = null
+        torch.close()
         EventBus.getDefault().unregister(this)
         EventBus.getDefault().post(AccessibilityStatusChangedEvent(AccessibilityStatusType.UNBOUND))
     }
@@ -256,11 +256,6 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
 
         // gesture detector settings
         gestureDetector.flickVelocityThreshold = preferences.flickSensitivityThreshold
-        Toast.makeText(
-            this,
-            "%f".format(gestureDetector.flickVelocityThreshold),
-            Toast.LENGTH_SHORT
-        ).show()
 
         // update status bar visibility based on the global setting and device state
         updateViewVisibility()
