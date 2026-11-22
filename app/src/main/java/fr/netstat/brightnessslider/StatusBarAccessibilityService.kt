@@ -73,7 +73,7 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
 
         @Suppress("DEPRECATION")
         val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
+            windowWidth,
             statusBarHeightDetector.height,
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
@@ -97,8 +97,8 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
     @SuppressLint("InlinedApi")
     override fun onDoubleTapConfirmed(event: MotionEvent) {
         when {
-            event.x < screenWidth / 3f -> appLauncher.launch(App.OFFLINE_TRANSLATOR, false)
-            event.x < screenWidth * 2f / 3f -> appLauncher.launch(
+            event.x < windowWidth / 3f -> appLauncher.launch(App.OFFLINE_TRANSLATOR, false)
+            event.x < windowWidth * 2f / 3f -> appLauncher.launch(
                 App.OPEN_CAMERA,
                 true
             )
@@ -134,7 +134,7 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         vibrate(5)
 
         when {
-            event.x < screenWidth * 0.5f -> toggleFlashLight()
+            event.x < windowWidth * 0.5f -> toggleFlashLight()
             else -> performGlobalAction(GLOBAL_ACTION_TAKE_SCREENSHOT)
         }
         Log.v("INFO", "long tap")
@@ -150,14 +150,14 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         Log.v("INFO", "down: ${downEvent.x}, current: ${event.x}")
 
         when {
-            event.x - downEvent.x > screenWidth * 0.5f -> {
+            event.x - downEvent.x > windowWidth * 0.5f -> {
                 performGlobalAction(
                     GLOBAL_ACTION_LOCK_SCREEN
                 )
                 return false
             }
 
-            downEvent.x - event.x > screenWidth * 0.5f -> {
+            downEvent.x - event.x > windowWidth * 0.5f -> {
                 performGlobalAction(
                     GLOBAL_ACTION_LOCK_SCREEN
                 )
@@ -172,7 +172,7 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         event: MotionEvent,
         downEvent: MotionEvent
     ): Boolean {
-        val pos = ((event.x - padding) / (screenWidth - 2 * padding)).coerceIn(0f, 1f)
+        val pos = ((event.x - padding) / (windowWidth - 2 * padding)).coerceIn(0f, 1f)
 
 
         val brightnessValue = when (useLogarithmicBrightness) {
@@ -240,11 +240,11 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         }
     }
 
-    private val screenWidth: Int
+    private val windowWidth: Int
         get() = if (isLandscape(this)) {
-            max(displayMetrics.widthPixels, displayMetrics.heightPixels)
+            max(displayMetrics.widthPixels, displayMetrics.heightPixels) * 80 / 100
         } else {
-            min(displayMetrics.widthPixels, displayMetrics.heightPixels)
+            min(displayMetrics.widthPixels, displayMetrics.heightPixels) * 80 / 100
         }
 
     private val displayMetrics: DisplayMetrics
@@ -270,7 +270,9 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         Log.v("INFO", "Configuration changed: ${newConfig.orientation}")
 
         // Update the status bar height when the configuration changes
-        val params = statusBarView.layoutParams as WindowManager.LayoutParams
+        val params = statusBarView.layoutParams as? WindowManager.LayoutParams? ?: return
+
+        params.width = windowWidth
         params.height = statusBarHeightDetector.height
         windowManager().updateViewLayout(statusBarView, params)
     }
