@@ -5,6 +5,8 @@ import android.accessibilityservice.AccessibilityService.WINDOW_SERVICE
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.res.Configuration
+import android.media.AudioAttributes
+import android.os.Vibrator
 import android.util.DisplayMetrics
 import android.view.WindowManager
 
@@ -47,4 +49,13 @@ fun getScreenOrientation(ctx: Context): Int {
 
 fun isLandscape(ctx: Context): Boolean {
     return getScreenOrientation(ctx) == Configuration.ORIENTATION_LANDSCAPE
+}
+
+fun vibrate(ctx: Context, milliseconds: Long = 30L) {
+    val vibrator = ctx.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    vibrator.vibrate(
+        milliseconds, AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_ALARM)
+            .build()
+    )
 }

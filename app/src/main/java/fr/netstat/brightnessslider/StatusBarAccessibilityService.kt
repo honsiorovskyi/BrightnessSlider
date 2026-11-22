@@ -4,7 +4,6 @@ import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
 import android.content.res.Configuration
 import android.graphics.PixelFormat
-import android.media.AudioAttributes
 import android.provider.Settings
 import android.util.DisplayMetrics
 import android.util.Log
@@ -41,6 +40,8 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
     private lateinit var preferences: Preferences
     private lateinit var torch: Torch
 
+    private var edgeBackGesture: EdgeBackGesture? = null
+
     private var useLogarithmicBrightness = false
 
     private val padding = 100 // Left and right "deadzone"
@@ -63,6 +64,8 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
         super.onDestroy()
 
         instance = null
+        edgeBackGesture?.destroy()
+        edgeBackGesture = null
         torch.close()
         EventBus.getDefault().unregister(this)
         EventBus.getDefault().post(AccessibilityStatusChangedEvent(AccessibilityStatusType.UNBOUND))
@@ -87,6 +90,9 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
             gravity = Gravity.TOP
         }
         windowManager().addView(statusBarView, params)
+
+        edgeBackGesture = EdgeBackGesture(this, statusBarHeightDetector)
+        updateSettings()
     }
 
     private fun windowManager(): WindowManager {
@@ -109,13 +115,13 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
 
     override fun onSingleLongTap(event: MotionEvent) {
         Log.v("INFO", "single long tap at ${event.x}, ${event.y}")
-        vibrate(5)
+        vibrate(this, 5)
 
         // as android.os.Vibrator).vibrate(android.os.VibrationEffect.createOneShot(50L, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
     }
 
 //    fun hideView() {
-//        vibrate(5)
+//        vibrate(this, 5)
 //
 //        val params = statusBarView.layoutParams as WindowManager.LayoutParams
 //
@@ -131,7 +137,7 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
 
     @SuppressLint("InlinedApi")
     override fun onDoubleLongTap(event: MotionEvent) {
-        vibrate(5)
+        vibrate(this, 5)
 
         when {
             event.x < windowWidth * 0.5f -> toggleFlashLight()
@@ -217,21 +223,13 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
             // screen back on. The window state changed is triggered more frequently, but
             // at least consistently.
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> updateViewVisibility()
+            AccessibilityEvent.TYPE_WINDOWS_CHANGED -> edgeBackGesture?.onWindowsChanged()
             else -> {}
         }
     }
 
     override fun onInterrupt() {}
 
-
-    private fun vibrate(milliseconds: Long = 30L) {
-        val vibrator = getSystemService(VIBRATOR_SERVICE) as android.os.Vibrator
-        vibrator.vibrate(
-            milliseconds, AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ALARM)
-                .build()
-        )
-    }
 
     private fun updateViewVisibility() {
         statusBarView.visibility = when {
@@ -259,10 +257,19 @@ class StatusBarAccessibilityService : AccessibilityService(), GestureListener {
 
         // update status bar visibility based on the global setting and device state
         updateViewVisibility()
+
+        // edge back gesture settings
+        edgeBackGesture?.let {
+            it.setEdges(preferences.backGestureEdges)
+            it.setRecentsFraction(preferences.recentsFraction)
+            it.setEnabled(preferences.isGloballyEnabled)
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         Log.v("INFO", "Configuration changed: ${newConfig.orientation}")
+
+        edgeBackGesture?.updateLayout()
 
         // Update the status bar height when the configuration changes
         val params = statusBarView.layoutParams as? WindowManager.LayoutParams? ?: return

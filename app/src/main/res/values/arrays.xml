@@ -16,4 +16,30 @@
         <item>Very Low (factor 2)</item>
         <item>Disabled (factor 1000)</item>
     </string-array>
+    <string-array name="arr_back_gesture_edges_values">
+        <item>none</item>
+        <item>left</item>
+        <item>right</item>
+        <item>both</item>
+    </string-array>
+    <string-array name="arr_back_gesture_edges_names">
+        <item>None</item>
+        <item>Left</item>
+        <item>Right</item>
+        <item>Both</item>
+    </string-array>
+    <string-array name="arr_recents_threshold_values">
+        <item>0.4</item>
+        <item>0.5</item>
+        <item>0.6</item>
+        <item>0.7</item>
+        <item>0.8</item>
+    </string-array>
+    <string-array name="arr_recents_threshold_names">
+        <item>40%</item>
+        <item>50%</item>
+        <item>60%</item>
+        <item>70%</item>
+        <item>80%</item>
+    </string-array>
 </resources>

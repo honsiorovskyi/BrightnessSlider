@@ -16,4 +16,14 @@
     <string name="lst_flick_sensitivity_summary">How fast you need to flick the finger to trigger a flick gesture. The higher sensitivity is, the slower you\'ll need to flick the finger.</string>
     <string name="lst_flick_sensitivity_default">1.0</string>
 
+    <string name="grp_back_gesture_settings">Back gesture</string>
+    <string name="lst_back_gesture_edges_id">lst_back_gesture_edges_id</string>
+    <string name="lst_back_gesture_edges_label">Back gesture edges</string>
+    <string name="lst_back_gesture_edges_summary">Drag inward from a screen edge and release to go back. Tap the edge to disable it for 5 seconds.</string>
+    <string name="lst_back_gesture_edges_default">none</string>
+    <string name="lst_recents_threshold_id">lst_recents_threshold_id</string>
+    <string name="lst_recents_threshold_label">Recents threshold</string>
+    <string name="lst_recents_threshold_summary">Dragging further than this share of the screen width opens Recents instead of going back.</string>
+    <string name="lst_recents_threshold_default">0.6</string>
+
 </resources>

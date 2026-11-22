@@ -24,5 +24,23 @@
             app:summary="@string/lst_flick_sensitivity_summary" />
 
     </PreferenceCategory>
+    <PreferenceCategory app:title="@string/grp_back_gesture_settings">
+
+        <ListPreference
+            android:defaultValue="@string/lst_back_gesture_edges_default"
+            android:entries="@array/arr_back_gesture_edges_names"
+            android:entryValues="@array/arr_back_gesture_edges_values"
+            android:key="@string/lst_back_gesture_edges_id"
+            android:title="@string/lst_back_gesture_edges_label"
+            app:summary="@string/lst_back_gesture_edges_summary" />
+        <ListPreference
+            android:defaultValue="@string/lst_recents_threshold_default"
+            android:entries="@array/arr_recents_threshold_names"
+            android:entryValues="@array/arr_recents_threshold_values"
+            android:key="@string/lst_recents_threshold_id"
+            android:title="@string/lst_recents_threshold_label"
+            app:summary="@string/lst_recents_threshold_summary" />
+
+    </PreferenceCategory>
 
 </PreferenceScreen>
